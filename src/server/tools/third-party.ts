@@ -1,4 +1,9 @@
 import { MCPTool } from '../../types/mcp';
+import { z } from "zod";
+
+const rawShape: z.ZodRawShape = {
+  message: z.string().length(10).describe("要处理的消息"),
+};
 
 export const thirdPartyTool: MCPTool = {
   name: 'third_party_example',
@@ -10,6 +15,7 @@ export const thirdPartyTool: MCPTool = {
     },
     required: ['message']
   },
+  parameters_zod: rawShape,
   examples: [
     {
       input: { message: 'Hello' },
@@ -20,7 +26,12 @@ export const thirdPartyTool: MCPTool = {
     // 模拟远程调用延迟
     await new Promise(resolve => setTimeout(resolve, 1000));
     return {
-      output: { processed_message: `${request.input.message} from third party!` }
+      content: [
+        {
+          type: "text",
+          text: `${request.input.message} from third party!`,
+        },
+      ],
     };
   }
 }; 

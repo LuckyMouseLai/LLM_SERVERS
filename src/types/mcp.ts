@@ -1,11 +1,4 @@
-export interface MCPRequest {
-  input: any;
-}
-
-export interface MCPResponse {
-  output: any;
-  error?: string;
-}
+import { z } from "zod";
 
 export interface MCPTool {
   name: string;
@@ -15,9 +8,10 @@ export interface MCPTool {
     properties: Record<string, any>;
     required: string[];
   };
+  parameters_zod: z.ZodRawShape;
   examples: Array<{
     input: any;
     output: any;
   }>;
-  handler: (request: MCPRequest) => Promise<MCPResponse>;
+  handler: (request: any) => Promise<any>;
 } 

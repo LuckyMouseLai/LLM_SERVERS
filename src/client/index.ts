@@ -1,90 +1,150 @@
-import axios from 'axios';
-import { EventSource } from 'eventsource';
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import readline from "readline/promises";
+export interface InputSchema {
+  type: 'object';
 
-const BASE_URL = 'http://localhost:3000';
-
-interface MCPTool {
-  name: string;
-  description: string;
-  parameters: {
-    type: string;
-    properties: Record<string, any>;
-    required: string[];
-  };
-  examples: Array<{
-    input: any;
-    output: any;
-  }>;
+  properties?: unknown | null;
+  [k: string]: unknown;
 }
+export interface CacheControlEphemeral {
+  type: 'ephemeral';
+}
+export interface Tool {
+  input_schema: InputSchema;
 
-async function main() {
-  try {
-    // 获取所有MCP工具列表
-    console.log('获取MCP工具列表...');
-    const toolsResponse = await axios.get(`${BASE_URL}/tools`);
-    const tools: MCPTool[] = toolsResponse.data;
-    
-    console.log('\n可用的MCP工具:');
-    tools.forEach(tool => {
-      console.log(`\n工具名称: ${tool.name}`);
-      console.log(`描述: ${tool.description}`);
-      console.log('示例:');
-      tool.examples.forEach((example, index) => {
-        console.log(`  示例 ${index + 1}:`);
-        console.log(`    输入: ${JSON.stringify(example.input)}`);
-        console.log(`    输出: ${JSON.stringify(example.output)}`);
+  name: string;
+
+  cache_control?: CacheControlEphemeral | null;
+  description?: string;
+}
+class MCPClient {
+  private mcp: Client;
+  private transport: StdioClientTransport | null = null;
+  private tools: Tool[] = [];
+
+  constructor() {
+    // Initialize Anthropic client and MCP client
+    this.mcp = new Client({ name: "mcp-client-cli", version: "1.0.0" });
+  }
+
+  async connectToServer(serverScriptPath: string) {
+    /**
+     * Connect to an MCP server
+     *
+     * @param serverScriptPath - Path to the server script (.py or .js)
+     */
+    try {
+      // Determine script type and appropriate command
+      const isJs = serverScriptPath.endsWith(".js");
+      const isPy = serverScriptPath.endsWith(".py");
+      if (!isJs && !isPy) {
+        throw new Error("Server script must be a .js or .py file");
+      }
+      const command = isPy
+        ? process.platform === "win32"
+          ? "python"
+          : "python3"
+        : process.execPath;
+
+      // Initialize transport and connect to server
+      this.transport = new StdioClientTransport({
+        command,
+        args: [serverScriptPath],
       });
-    });
+      this.mcp.connect(this.transport);
 
-    // 创建MCP客户端
-    const client = new Client({
-      name: "mcp-client",
-      version: "1.0.0"
-    });
-
-    // 建立SSE连接
-    console.log('\n建立SSE连接...');
-    const transport = new SSEClientTransport(new URL(`${BASE_URL}/sse`), {
-      requestInit: {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    });
-    await client.connect(transport);
-
-    // 测试工具函数
-    async function testTools(tools: MCPTool[]) {
-      for (const tool of tools) {
-        console.log(`\n测试工具: ${tool.name}`);
-        
-        for (const example of tool.examples) {
-          console.log(`\n执行示例: ${JSON.stringify(example.input)}`);
-          try {
-            const result = await client.callTool({
-              name: tool.name,
-              arguments: example.input
-            });
-            console.log('结果:', result);
-          } catch (error) {
-            console.error('执行失败:', error instanceof Error ? error.message : '未知错误');
-          }
-        }
-      }
-      
-      // 测试完成后关闭连接
-      await transport.close();
+      // List available tools
+      const toolsResult = await this.mcp.listTools();
+      console.log("toolsResult: ", toolsResult);
+      this.tools = toolsResult.tools.map((tool) => {
+        return {
+          name: tool.name,
+          description: tool.description,
+          input_schema: tool.inputSchema,
+        };
+      });
+      console.log(
+        "Connected to server with tools:",
+        this.tools.map(({ name }) => name),
+      );
+      console.log(
+        "输入大模型的tool提示词：", this.tools
+      );
+    } catch (e) {
+      console.log("Failed to connect to MCP server: ", e);
+      throw e;
     }
+  }
 
-    // 开始测试工具
-    await testTools(tools);
+  async processQuery(query: string) {
+    console.log("processQuery: ", query); 
+    const toolName = "calculator";
+    const toolArgs = {
+      a: 5, // 第一个数字
+      b: 3, // 第二个数字
+      operation: "add" // 运算类型
+    } as { [x: string]: unknown } | undefined;
+    try {
+      const result = await this.mcp.callTool({
+        name: toolName,
+        arguments: toolArgs
+      });
+      console.log("tool result: ", result);
+      return String(result);
+    } catch (e) {
+      console.log("tool error: ", e);
+      return String(e);
+    }
+  }
 
-  } catch (error) {
-    console.error('发生错误:', error instanceof Error ? error.message : '未知错误');
+  async chatLoop() {
+    /**
+     * Run an interactive chat loop
+     */
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    try {
+      console.log("\nMCP Client Started!");
+      console.log("Type your queries or 'quit' to exit.");
+
+      while (true) {
+        const message = await rl.question("\nQuery: ");
+        if (message.toLowerCase() === "quit") {
+          break;
+        }
+        const response = await this.processQuery(message);
+        console.log("\n" + response);
+      }
+    } finally {
+      rl.close();
+    }
+  }
+
+  async cleanup() {
+    /**
+     * Clean up resources
+     */
+    await this.mcp.close();
   }
 }
 
-main(); 
+async function main() {
+  if (process.argv.length < 3) {
+    console.log("Usage: node build/index.js <path_to_server_script>");
+    return;
+  }
+  const mcpClient = new MCPClient();
+  try {
+    await mcpClient.connectToServer(process.argv[2]);
+    await mcpClient.chatLoop();
+  } finally {
+    await mcpClient.cleanup();
+    process.exit(0);
+  }
+}
+
+main();

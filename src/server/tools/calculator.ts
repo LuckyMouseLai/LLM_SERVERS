@@ -1,5 +1,13 @@
 import { MCPTool } from '../../types/mcp';
+import { z } from "zod";
 
+const rawShape: z.ZodRawShape = {
+  a: z.number().describe("第一个数字"),
+  b: z.number().describe("第二个数字"), 
+  operation: z.enum(["add", "subtract"]).describe("运算类型")
+};
+
+// 定义 calculatorTool
 export const calculatorTool: MCPTool = {
   name: 'calculator',
   description: '执行简单的加减法运算',
@@ -12,6 +20,7 @@ export const calculatorTool: MCPTool = {
     },
     required: ['a', 'b', 'operation']
   },
+  parameters_zod: rawShape,
   examples: [
     {
       input: { a: 5, b: 3, operation: 'add' },
@@ -22,21 +31,21 @@ export const calculatorTool: MCPTool = {
       output: { result: 2 }
     }
   ],
-  handler: async (request) => {
-    const { a, b, operation } = request.input;
-    let result;
+  handler: async (request: any) => {
+    const { a = 0, b = 0, operation = 'add' } = request;
+    let result: number | undefined;
     if (operation === 'add') {
       result = a + b;
     } else if (operation === 'subtract') {
       result = a - b;
-    } else {
-      return {
-        output: null,
-        error: '不支持的运算类型'
-      };
     }
     return {
-      output: { result }
+      content: [
+        {
+          type: "text",
+          text: result !== undefined ? result.toString() : "计算结果未定义",
+        },
+      ],
     };
   }
-}; 
+};
