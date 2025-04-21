@@ -9,7 +9,8 @@
     "start:server": "node dist/server/index.js",
     "start:client": "node dist/client/index.js dist/server/index.js",
     "client": "npm run build && npm run start:client",
-    "server": "npm run build && npm run start:server"
+    "server": "npm run build && npm run start:server",
+    "agent": "npm run build && node dist/agent/agent.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
@@ -21,6 +22,6 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=16.13.1"
+    "node": ">=18.20.2"
   }
 }
