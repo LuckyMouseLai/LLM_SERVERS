@@ -1,6 +1,5 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import readline from "readline/promises";
 export interface InputSchema {
   type: 'object';
 
@@ -100,28 +99,33 @@ class MCPClient {
 
   async chatLoop() {
     /**
-     * Run an interactive chat loop
+     * Run an interactive chat loop using standard input/output
      */
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
+    console.log("\nMCP Client Started!");
+    console.log("Type your queries or 'quit' to exit.");
+
+    process.stdin.setEncoding('utf8');
+    process.stdout.write("\nQuery: ");
+
+    process.stdin.on('data', async (data) => {
+      const message = data.toString().trim();
+      
+      if (message.toLowerCase() === "quit") {
+        process.stdin.end();
+        return;
+      }
+
+      const response = await this.processQuery(message);
+      console.log("\n" + response);
+      process.stdout.write("\nQuery: ");
     });
 
-    try {
-      console.log("\nMCP Client Started!");
-      console.log("Type your queries or 'quit' to exit.");
-
-      while (true) {
-        const message = await rl.question("\nQuery: ");
-        if (message.toLowerCase() === "quit") {
-          break;
-        }
-        const response = await this.processQuery(message);
-        console.log("\n" + response);
-      }
-    } finally {
-      rl.close();
-    }
+    // 等待输入流结束
+    await new Promise<void>((resolve) => {
+      process.stdin.on('end', () => {
+        resolve();
+      });
+    });
   }
 
   async cleanup() {
