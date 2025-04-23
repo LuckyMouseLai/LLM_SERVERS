@@ -68,6 +68,41 @@ export class LLMService {
         return await response.json();
     }
 
+    async chat(input: string, tools: any[] = []): Promise<IntentResult> {
+        const systemPrompt = `你是一个人工智能小助手。`;
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: input }
+        ];
+        let response;
+        if (tools.length > 0) {
+            response = await this.callSiliconFlow(messages, tools);
+        }
+        else {
+            response = await this.callSiliconFlow(messages);
+        }
+        const responseMessage = response.choices[0].message;
+        if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+            for (const toolCall of responseMessage.tool_calls) {
+                const toolName = toolCall.function.name;
+                const toolArgs = JSON.parse(toolCall.function.arguments);
+                console.log("toolname: ", toolName, " args: ", toolArgs);
+                return {
+                    intent: toolName,
+                    text: "",
+                    parameters: toolArgs
+                };
+            }
+        }
+        const result = response.choices[0].message.content;
+        return {
+            intent: "chat",
+            text: result,
+            parameters: {}
+        };
+        
+    }
+
     async classifyIntent(input: string): Promise<IntentResult> {
         const systemPrompt = `你是一个人工智能小助手。`;
         // 获取所有工具名称

@@ -24,7 +24,8 @@ const PORT = process.env.PORT || 3000;
 const QWEN_MODEL = "Qwen/QwQ-32B";
 
 // 高德地图MCP服务URL
-const AMAP_MCP_URL = "https://mcp.amap.com/sse?key=bec2c3f2768da638f5762106803e4866";
+// const AMAP_MCP_URL = "https://mcp.amap.com/sse?key=bec2c3f2768da638f5762106803e4866";
+const AMAP_MCP_URL = "http://172.16.2.248:8000/sse";
 
 // 创建全局MCP客户端
 let mcpClient = null;

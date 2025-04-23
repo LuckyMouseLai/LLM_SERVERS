@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import sys
 os.environ["http_proxy"] = "http://localhost:7890"
 os.environ["https_proxy"] = "http://localhost:7890"
 BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
@@ -90,5 +91,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(main())

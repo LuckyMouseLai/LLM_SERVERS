@@ -1,10 +1,13 @@
 import { MCPClient } from './mcp.js';
 import { LLMService } from './llm.js';
 import { AgentResponse } from './types.js';
-
+import { v4 as uuidv4 } from 'uuid';
 export class Agent {
-    private mcpClient: MCPClient;
+    
     private llmService!: LLMService;
+    private context: string = "";
+    private tools: any[] = [];
+    private handoffs: any[] = [];
 
     constructor(mcpBaseUrl: string) {
         this.mcpClient = new MCPClient(mcpBaseUrl);
@@ -16,6 +19,23 @@ export class Agent {
     }
 
     async processInput(input: string): Promise<AgentResponse> {
+        // 1. 分类意图
+        const chatResult = await this.llmService.chat(input);
+        if (chatResult.intent === 'chat') {
+            return {
+                type: 'conversation',
+                content: chatResult.text
+            };
+        }
+
+        
+        
+
+        // 2. 如果意图是对话，则返回对话内容
+        // 3. 如果意图是工具，则提取工具名称和参数
+        // 4. 执行工具
+        // 5. 返回工具执行结果
+        // 6. 如果意图是退出，则返回退出消息
         const intentResult = await this.llmService.classifyIntent(input);
 
         if (intentResult.intent === 'conversation') {
@@ -63,21 +83,3 @@ export class Agent {
     }
 }
 
-
-async function main() {
-    const agent = new Agent('https://mcp.amap.com/sse?key=bec2c3f2768da638f5762106803e4866');
-    await agent.initialize();
-
-    // 对话场景
-    const response1 = await agent.processInput('你好');
-    console.log(response1.content); // 输出：我理解您想进行对话。你好
-
-    // 工具执行场景
-    console.log('----------------------');
-    const response2 = await agent.processInput('使用search工具，关键词：typescript');
-    console.log(response2.content);
-    // 如果参数完整，会执行工具并返回结果
-    // 如果参数不完整，会要求提供缺失的参数
-  }
-  
-  main();

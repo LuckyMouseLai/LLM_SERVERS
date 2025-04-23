@@ -14,7 +14,7 @@ export interface IntentResult {
     intent: string;
     text: string;
     parameters: Record<string, any>;
-
+    sessionId?: string;
 }
 
 export interface ParameterExtractionResult {
@@ -28,4 +28,5 @@ export interface AgentResponse {
     content: string;
     parameters?: Record<string, any>;
     missingParameters?: string[];
+    sessionId?: string;
 } 

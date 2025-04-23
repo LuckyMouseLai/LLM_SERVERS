@@ -4,6 +4,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 export class MCPClient {
     private client: Client | null = null;
+    private clients: Map<string, Client> = new Map();
     private isConnected = false;
     private tools: any[] = [];
 
