@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+        "amap-mcp": {
+            "url": "https://mcp.amap.com/sse?key=bec2c3f2768da638f5762106803e4866",
+            "type": "sse",
+            "env": {
+                "API_KEY": "value"
+            }
+        },
+
+        "local-mcp": {
+            "command": "node",
+            "args": ["./dist/server/index.js"]
+        }
+    }
+}
