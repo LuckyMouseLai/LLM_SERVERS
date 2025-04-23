@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  agent:
+    restart: always
+    build:
+      context: .
+      dockerfile: dockerfile
+    image: nexhome/llm-voice-server:latest  # 给镜像指定标签
+    ports:
+      - "51522:22"
+      - "7547:8547"  
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./:/workspace
