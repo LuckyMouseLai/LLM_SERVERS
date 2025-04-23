@@ -10,10 +10,16 @@ export interface MCPTool {
     }>;
 }
 
+export interface ToolCall {
+    name: string;
+    parameters: Record<string, any>;
+}
+
 export interface IntentResult {
     intent: string;
     text: string;
     parameters: Record<string, any>;
+    toolCall?: ToolCall;
     sessionId?: string;
 }
 
